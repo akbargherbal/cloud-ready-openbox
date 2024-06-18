@@ -4,27 +4,51 @@ import os
 from pathlib import Path
 import sys
 from datetime import datetime
+import argparse
+
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Set up Openbox and Chrome Remote Desktop")
+parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+parser.add_argument("-l", "--log-file", default=None, help="Specify a custom log file path")
+args = parser.parse_args()
 
 # Set up logging
 TIME_STAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
-log_file_name = os.path.join(Path.home(), f'setup_openbox_{TIME_STAMP}.log')
+if args.log_file:
+    log_file_name = args.log_file
+else:
+    log_file_name = os.path.join(Path.home(), f'setup_openbox_{TIME_STAMP}.log')
 
-logging.basicConfig(filename=log_file_name, level=logging.INFO,
+log_level = logging.DEBUG if args.verbose else logging.INFO
+logging.basicConfig(filename=log_file_name, level=log_level,
                     format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
 
 # Rest of your script...
 
-def run_command(command):
+def run_command(command, capture_output=False):
     """Runs a command, logs output, and handles errors."""
     try:
         logging.info(f"Running command: {' '.join(command)}")
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True)
-        logging.info(f"Output: {result.stdout}")
-        return True  # Success
+        if capture_output:
+            result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True, capture_output=True)
+            logging.debug(f"Output: {result.stdout}")
+            logging.debug(f"Error output: {result.stderr}")
+            return result.stdout, result.stderr
+        else:
+            subprocess.run(command, check=True)
+            return True  # Success
     except subprocess.CalledProcessError as e:
         logging.error(f"Command execution failed: {e}")
-        logging.error(f"Error output: {e.stderr}")
         return False  # Failure
+
+def install_packages(packages):
+    """Install a list of packages using the system package manager."""
+    for package in packages:
+        logging.info(f"Installing {package}...")
+        if not run_command(["sudo", "apt", "install", "-y", package]):
+            logging.error(f"Failed to install {package}. Continuing installation...")
+            return False
+    return True
 
 # Ensure script runs with appropriate permissions (e.g., sudo)
 if os.geteuid() != 0:
@@ -45,21 +69,21 @@ try:
     if not run_command(["sudo", "apt", "upgrade", "-y"]):
         logging.error("Failed to upgrade packages. Continuing installation...")
 
-    # Install packages individually
+    # Install packages as a dependency group
     print("Installing Openbox and related packages...")
     packages = ["openbox", "obconf", "lxterminal", "thunar", "menumaker"]
-    for package in packages:
-        if not run_command(["sudo", "apt", "install", "-y", package]):
-            logging.error(f"Failed to install {package}. Continuing installation...")
-            sys.exit(1)
+    if not install_packages(packages):
+        logging.error("Failed to install Openbox and related packages.")
+        sys.exit(1)
 
     # Download and install Chrome Remote Desktop
     print("Downloading and installing Chrome Remote Desktop...")
-    if not run_command(["wget", "-qO", "-", "https://dl.google.com/linux/linux_signing_key.pub"]):
+    if not run_command(["wget", "-qO", "-", "https://dl.google.com/linux/linux_signing_key.pub"], capture_output=True):
         logging.error("Failed to download Chrome Remote Desktop signing key. Continuing installation...")
         sys.exit(1)
 
-    if not run_command(["sudo", "apt-key", "add", "-"]):
+    key_output, _ = run_command(["sudo", "apt-key", "add", "-"], capture_output=True, input=key_output.encode())
+    if not key_output:
         logging.error("Failed to add Chrome Remote Desktop signing key. Continuing installation...")
         sys.exit(1)
 
@@ -71,7 +95,7 @@ try:
         logging.error("Failed to update package indexes after adding Chrome Remote Desktop repository. Continuing installation...")
         sys.exit(1)
 
-    if not run_command(["sudo", "apt", "install", "-y", "chrome-remote-desktop"]):
+    if not install_packages(["chrome-remote-desktop"]):
         logging.error("Failed to install Chrome Remote Desktop. Continuing installation...")
         sys.exit(1)
 
