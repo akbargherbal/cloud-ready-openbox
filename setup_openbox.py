@@ -61,8 +61,11 @@ if not run_command(["sudo", "sh", "-c", 'echo "deb [arch=amd64] http://dl.google
     exit(1)
 
 # Import the Google Chrome Remote Desktop signing key
-if not run_command(["wget", "-qO", "-", "https://dl.google.com/linux/linux_signing_key.pub", "|", "sudo", "apt-key", "add", "-"]):
-    logging.error("Failed to import Google Chrome Remote Desktop signing key. Exiting script.")
+if not run_command(["wget", "-q", "-O", "linux_signing_key.pub", "https://dl.google.com/linux/linux_signing_key.pub"]):
+    logging.error("Failed to download Google Chrome Remote Desktop signing key. Exiting script.")
+    exit(1)
+if not run_command(["sudo", "apt-key", "add", "linux_signing_key.pub"]):
+    logging.error("Failed to add Google Chrome Remote Desktop signing key. Exiting script.")
     exit(1)
 
 # Update package indexes after adding Chrome Remote Desktop repository
