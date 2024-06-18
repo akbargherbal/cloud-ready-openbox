@@ -71,7 +71,7 @@ try:
 
     # Install packages as a dependency group
     print("Installing Openbox and related packages...")
-    packages = ["openbox", "obconf", "lxterminal", "thunar", "obm-menumaker"]
+    packages = ["openbox", "obconf", "lxterminal", "thunar"]
     if not install_packages(packages):
         logging.error("Failed to install Openbox and related packages.")
 
