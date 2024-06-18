@@ -2,6 +2,7 @@ import subprocess
 import logging
 import os
 from pathlib import Path
+import sys
 from datetime import datetime
 
 TIME_STAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -42,23 +43,40 @@ packages = ["openbox", "obconf", "lxterminal", "thunar", "menumaker"]
 for package in packages:
     if not run_command(["sudo", "apt", "install", "-y", package]):
         logging.error(f"Failed to install {package}. Continuing installation...")
+        # exit if error
+        sys.exit(1)
+
 
 print("Downloading and installing Chrome Remote Desktop...")
 # Download and install Chrome Remote Desktop
 if not run_command(["wget", "-qO", "-", "https://dl.google.com/linux/linux_signing_key.pub"]):
     logging.error("Failed to download Chrome Remote Desktop signing key. Continuing installation...")
+    print("Failed to download Chrome Remote Desktop signing key. Continuing installation...")
+    # exit if error
+    sys.exit(1)
 
 if not run_command(["sudo", "apt-key", "add", "-"]):
     logging.error("Failed to add Chrome Remote Desktop signing key. Continuing installation...")
+    print("Failed to add Chrome Remote Desktop signing key. Continuing installation...")
+    # exit if error
+    sys.exit(1)
 
 if not run_command(["sudo", "sh", "-c", 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome-remote-desktop/deb/ stable main" >> /etc/apt/sources.list.d/chrome-remote-desktop.list']):
     logging.error("Failed to add Chrome Remote Desktop repository. Continuing installation...")
+    # exit if error
+    sys.exit(1)
 
 if not run_command(["sudo", "apt", "update", "-y"]):
     logging.error("Failed to update package indexes after adding Chrome Remote Desktop repository. Continuing installation...")
+    print("Failed to update package indexes after adding Chrome Remote Desktop repository. Continuing installation...")
+    # exit if error
+    sys.exit(1)
 
 if not run_command(["sudo", "apt", "install", "-y", "chrome-remote-desktop"]):
     logging.error("Failed to install Chrome Remote Desktop. Continuing installation...")
+    print("Failed to install Chrome Remote Desktop. Continuing installation...")
+    # exit if error
+    sys.exit(1)
 
 print("Configuring Chrome Remote Desktop...")
 # Configure Chrome Remote Desktop
@@ -66,6 +84,9 @@ try:
     run_command(["sudo", "groupadd", "chrome-remote-desktop"])
 except subprocess.CalledProcessError:
     logging.info("Group 'chrome-remote-desktop' already exists. Continuing...")
+    print("Group 'chrome-remote-desktop' already exists. Continuing...")
+
+
 
 run_command(["sudo", "usermod", "-a", "-G", "chrome-remote-desktop", user])
 
