@@ -16,11 +16,11 @@ def run_command(command):
     try:
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True)
         logging.info(f"Command: {' '.join(command)}\nOutput: {result.stdout}")
+        return True  # Success
     except subprocess.CalledProcessError as e:
         logging.error(f"Command execution failed: {e}")
         logging.error(f"Error output: {e.stderr}")
-        return False
-    return True
+        return False  # Failure
 
 # Get the username and home directory
 user = os.getenv("USER")
@@ -29,44 +29,36 @@ home_dir = Path(os.getenv("HOME"))
 print("Updating package indexes...")
 # Update package indexes
 if not run_command(["sudo", "apt", "update", "-y"]):
-    logging.error("Failed to update package indexes. Exiting script.")
-    exit(1)
+    logging.error("Failed to update package indexes. Continuing installation...")
 
 print("Upgrading packages...")
 # Upgrade packages
 if not run_command(["sudo", "apt", "upgrade", "-y"]):
-    logging.error("Failed to upgrade packages. Exiting script.")
-    exit(1)
+    logging.error("Failed to upgrade packages. Continuing installation...")
 
 print("Installing Openbox and related packages...")
 # Install packages individually
-packages = ["openbox", "obconf", "lxterminal", "thunar", "obmenu"]
+packages = ["openbox", "obconf", "lxterminal", "thunar", "menumaker"]
 for package in packages:
     if not run_command(["sudo", "apt", "install", "-y", package]):
-        logging.error(f"Failed to install {package}. Exiting script.")
-        exit(1)
+        logging.error(f"Failed to install {package}. Continuing installation...")
 
 print("Downloading and installing Chrome Remote Desktop...")
 # Download and install Chrome Remote Desktop
 if not run_command(["wget", "-qO", "-", "https://dl.google.com/linux/linux_signing_key.pub"]):
-    logging.error("Failed to download Chrome Remote Desktop signing key. Exiting script.")
-    exit(1)
+    logging.error("Failed to download Chrome Remote Desktop signing key. Continuing installation...")
 
 if not run_command(["sudo", "apt-key", "add", "-"]):
-    logging.error("Failed to add Chrome Remote Desktop signing key. Exiting script.")
-    exit(1)
+    logging.error("Failed to add Chrome Remote Desktop signing key. Continuing installation...")
 
 if not run_command(["sudo", "sh", "-c", 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome-remote-desktop/deb/ stable main" >> /etc/apt/sources.list.d/chrome-remote-desktop.list']):
-    logging.error("Failed to add Chrome Remote Desktop repository. Exiting script.")
-    exit(1)
+    logging.error("Failed to add Chrome Remote Desktop repository. Continuing installation...")
 
 if not run_command(["sudo", "apt", "update", "-y"]):
-    logging.error("Failed to update package indexes after adding Chrome Remote Desktop repository. Exiting script.")
-    exit(1)
+    logging.error("Failed to update package indexes after adding Chrome Remote Desktop repository. Continuing installation...")
 
 if not run_command(["sudo", "apt", "install", "-y", "chrome-remote-desktop"]):
-    logging.error("Failed to install Chrome Remote Desktop. Exiting script.")
-    exit(1)
+    logging.error("Failed to install Chrome Remote Desktop. Continuing installation...")
 
 print("Configuring Chrome Remote Desktop...")
 # Configure Chrome Remote Desktop
@@ -82,7 +74,8 @@ print("Preparing Openbox configuration...")
 openbox_config_dir = home_dir / ".config" / "openbox"
 openbox_config_dir.mkdir(parents=True, exist_ok=True)
 run_command(["cp", "/etc/xdg/openbox/rc.xml", str(openbox_config_dir / "rc.xml")])
-run_command(["cp", "/etc/xdg/openbox/menu.xml", str(openbox_config_dir / "menu.xml")])
+# Generate Openbox menu using menumaker
+run_command(["menumaker", "-f", "-t", "openbox3", "-o", str(openbox_config_dir / "menu.xml")])
 
 print("Setting up Chrome Remote Desktop session...")
 # Write Chrome Remote Desktop session file
