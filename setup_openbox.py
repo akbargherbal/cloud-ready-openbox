@@ -26,16 +26,19 @@ def run_command(command):
 user = os.getenv("USER")
 home_dir = Path(os.getenv("HOME"))
 
+print("Updating package indexes...")
 # Update package indexes
 if not run_command(["sudo", "apt", "update", "-y"]):
     logging.error("Failed to update package indexes. Exiting script.")
     exit(1)
 
+print("Upgrading packages...")
 # Upgrade packages
 if not run_command(["sudo", "apt", "upgrade", "-y"]):
     logging.error("Failed to upgrade packages. Exiting script.")
     exit(1)
 
+print("Installing Openbox and related packages...")
 # Install packages individually
 packages = ["openbox", "obconf", "lxterminal", "thunar", "obmenu"]
 for package in packages:
@@ -43,6 +46,7 @@ for package in packages:
         logging.error(f"Failed to install {package}. Exiting script.")
         exit(1)
 
+print("Downloading and installing Chrome Remote Desktop...")
 # Download and install Chrome Remote Desktop
 if not run_command(["wget", "-qO", "-", "https://dl.google.com/linux/linux_signing_key.pub"]):
     logging.error("Failed to download Chrome Remote Desktop signing key. Exiting script.")
@@ -64,6 +68,7 @@ if not run_command(["sudo", "apt", "install", "-y", "chrome-remote-desktop"]):
     logging.error("Failed to install Chrome Remote Desktop. Exiting script.")
     exit(1)
 
+print("Configuring Chrome Remote Desktop...")
 # Configure Chrome Remote Desktop
 try:
     run_command(["sudo", "groupadd", "chrome-remote-desktop"])
@@ -72,12 +77,14 @@ except subprocess.CalledProcessError:
 
 run_command(["sudo", "usermod", "-a", "-G", "chrome-remote-desktop", user])
 
+print("Preparing Openbox configuration...")
 # Prepare Openbox configuration
 openbox_config_dir = home_dir / ".config" / "openbox"
 openbox_config_dir.mkdir(parents=True, exist_ok=True)
 run_command(["cp", "/etc/xdg/openbox/rc.xml", str(openbox_config_dir / "rc.xml")])
 run_command(["cp", "/etc/xdg/openbox/menu.xml", str(openbox_config_dir / "menu.xml")])
 
+print("Setting up Chrome Remote Desktop session...")
 # Write Chrome Remote Desktop session file
 session_file = home_dir / ".chrome-remote-desktop-session"
 with session_file.open("w") as f:
@@ -86,6 +93,7 @@ with session_file.open("w") as f:
 # Set permissions on the session file
 run_command(["chmod", "+x", str(session_file)])
 
+print("Enabling and starting Chrome Remote Desktop service...")
 # Enable and start Chrome Remote Desktop service
 run_command(["sudo", "systemctl", "enable", f"chrome-remote-desktop@{user}"])
 run_command(["sudo", "systemctl", "start", f"chrome-remote-desktop@{user}"])
