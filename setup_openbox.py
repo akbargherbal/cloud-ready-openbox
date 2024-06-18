@@ -20,6 +20,7 @@ def run_command(command, log_output=True):
             logging.info(f"Command: {' '.join(command)}\nOutput: {result.stdout}")
     except subprocess.CalledProcessError as e:
         logging.error(f"Command execution failed: {e}")
+        print(e)
         logging.error(f"Error output: {e.stderr}")
         return False
     return True
