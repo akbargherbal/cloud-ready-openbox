@@ -5,10 +5,10 @@ from pathlib import Path
 from datetime import datetime
 
 TIME_STAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
-log_file_name = f'setup_openbox_{TIME_STAMP}'
+log_file_name = f'setup_openbox_{TIME_STAMP}.log'
 
 # Set up logging
-logging.basicConfig(filename=TIME_STAMP, level=logging.INFO,
+logging.basicConfig(filename=log_file_name, level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s', filemode='w')
 
 def run_command(command):
@@ -16,29 +16,53 @@ def run_command(command):
     try:
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True)
         logging.info(f"Command: {' '.join(command)}\nOutput: {result.stdout}")
-
-        if result.returncode != 0:
-            logging.error(f"Error: {result.stderr}")
-
     except subprocess.CalledProcessError as e:
-        logging.exception(f"Command execution failed: {e}")
-        raise  # Re-raise to stop the script execution
+        logging.error(f"Command execution failed: {e}")
+        logging.error(f"Error output: {e.stderr}")
+        return False
+    return True
 
 # Get the username and home directory
 user = os.getenv("USER")
 home_dir = Path(os.getenv("HOME"))
 
-# Update and install packages
-run_command(["sudo", "apt", "update", "-y"])
-run_command(["sudo", "apt", "upgrade", "-y"])
-run_command(["sudo", "apt", "install", "-y", "openbox", "obconf", "lxterminal", "thunar", "obmenu"])
+# Update package indexes
+if not run_command(["sudo", "apt", "update", "-y"]):
+    logging.error("Failed to update package indexes. Exiting script.")
+    exit(1)
+
+# Upgrade packages
+if not run_command(["sudo", "apt", "upgrade", "-y"]):
+    logging.error("Failed to upgrade packages. Exiting script.")
+    exit(1)
+
+# Install packages individually
+packages = ["openbox", "obconf", "lxterminal", "thunar", "obmenu"]
+for package in packages:
+    if not run_command(["sudo", "apt", "install", "-y", package]):
+        logging.error(f"Failed to install {package}. Exiting script.")
+        exit(1)
 
 # Download and install Chrome Remote Desktop
-run_command(["wget", "-qO", "-", "https://dl.google.com/linux/linux_signing_key.pub"])
-run_command(["sudo", "apt-key", "add", "-"])
-run_command(["sudo", "sh", "-c", 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome-remote-desktop/deb/ stable main" >> /etc/apt/sources.list.d/chrome-remote-desktop.list'])
-run_command(["sudo", "apt", "update", "-y"])
-run_command(["sudo", "apt", "install", "-y", "chrome-remote-desktop"])
+if not run_command(["wget", "-qO", "-", "https://dl.google.com/linux/linux_signing_key.pub"]):
+    logging.error("Failed to download Chrome Remote Desktop signing key. Exiting script.")
+    exit(1)
+
+if not run_command(["sudo", "apt-key", "add", "-"]):
+    logging.error("Failed to add Chrome Remote Desktop signing key. Exiting script.")
+    exit(1)
+
+if not run_command(["sudo", "sh", "-c", 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome-remote-desktop/deb/ stable main" >> /etc/apt/sources.list.d/chrome-remote-desktop.list']):
+    logging.error("Failed to add Chrome Remote Desktop repository. Exiting script.")
+    exit(1)
+
+if not run_command(["sudo", "apt", "update", "-y"]):
+    logging.error("Failed to update package indexes after adding Chrome Remote Desktop repository. Exiting script.")
+    exit(1)
+
+if not run_command(["sudo", "apt", "install", "-y", "chrome-remote-desktop"]):
+    logging.error("Failed to install Chrome Remote Desktop. Exiting script.")
+    exit(1)
 
 # Configure Chrome Remote Desktop
 try:
