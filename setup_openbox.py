@@ -13,7 +13,7 @@ logging.basicConfig(filename=log_file_name, level=logging.INFO,
 
 def run_command(command, log_output=True):
     """Runs a command, logs output, and handles errors."""
-    print(f'Now Running: {command}')
+    print(f'Now Running: {" ".join(command)}')
     try:
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True)
         if log_output:
@@ -52,18 +52,16 @@ for package in packages:
 if run_command(["apt", "search", "obmenu"]):
     # Install obmenu if available
     if not run_command(["sudo", "apt", "install", "-y", "obmenu"]):
-        logging.warning("obmenu found but failed to install. Continuing setup.")
-else:
-    logging.warning("obmenu not found in repositories. Skipping installation.")
+        logging.warning("obmenu found but installation failed.")
 
-# Download and install Chrome Remote Desktop GPG key
-if not run_command(["wget", "-qO", "/usr/share/keyrings/chrome-remote-desktop-keyring.gpg", "https://dl.google.com/linux/linux_signing_key.pub"]):
-    logging.error("Failed to download Chrome Remote Desktop signing key. Exiting script.")
+# Add the Chrome Remote Desktop repository
+if not run_command(["sudo", "sh", "-c", 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome-remote-desktop/deb/ stable main" >> /etc/apt/sources.list.d/chrome-remote-desktop.list']):
+    logging.error("Failed to add Chrome Remote Desktop repository. Exiting script.")
     exit(1)
 
-# Add Chrome Remote Desktop repository
-if not run_command(["sudo", "sh", "-c", 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/chrome-remote-desktop-keyring.gpg] http://dl.google.com/linux/chrome-remote-desktop/deb/ stable main" > /etc/apt/sources.list.d/chrome-remote-desktop.list']):  
-    logging.error("Failed to add Chrome Remote Desktop repository. Exiting script.")
+# Import the Google Chrome Remote Desktop signing key
+if not run_command(["wget", "-qO", "-", "https://dl.google.com/linux/linux_signing_key.pub", "|", "sudo", "apt-key", "add", "-"]):
+    logging.error("Failed to import Google Chrome Remote Desktop signing key. Exiting script.")
     exit(1)
 
 # Update package indexes after adding Chrome Remote Desktop repository
