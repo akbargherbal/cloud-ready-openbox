@@ -74,7 +74,6 @@ try:
     packages = ["openbox", "obconf", "lxterminal", "thunar", "obm-menumaker"]
     if not install_packages(packages):
         logging.error("Failed to install Openbox and related packages.")
-        sys.exit(1)
 
     # Download and install Chrome Remote Desktop
     print("Downloading and installing Chrome Remote Desktop...")
@@ -115,7 +114,7 @@ try:
     openbox_config_dir = home_dir / ".config" / "openbox"
     openbox_config_dir.mkdir(parents=True, exist_ok=True)
     run_command(["cp", "/etc/xdg/openbox/rc.xml", str(openbox_config_dir / "rc.xml")])
-    run_command(["obm-menumaker", "-o", str(openbox_config_dir / "menu.xml")])
+    # run_command(["obm-menumaker", "-o", str(openbox_config_dir / "menu.xml")])
 
     # Write Chrome Remote Desktop session file
     print("Setting up Chrome Remote Desktop session...")
