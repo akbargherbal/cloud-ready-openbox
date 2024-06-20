@@ -47,6 +47,7 @@ for package in packages:
         logging.error(f"Failed to install {package}. Exiting script.")
         print(f"Failed to install {package}. Exiting script.")
         exit(1)
+    print(f"{package} installed successfully.")
 
 logging.info("All packages installed successfully.")
 print("All packages installed successfully.")
