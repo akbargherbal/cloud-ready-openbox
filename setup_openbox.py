@@ -41,7 +41,8 @@ if not run_command(["sudo", "apt", "upgrade", "-y"]):
     exit(1)
 
 # Install necessary packages for Openbox and menu generation
-packages = ["openbox", "konsole" , "obconf", "thunar", "menu", "rofi", "tint2"]
+packages = ["openbox", "terminator" , "obconf", "thunar", "menu", "rofi",
+            "tint2", "mousepad", "python3-pip", ]
 for package in packages:
     if not run_command(["sudo", "apt", "install", "-y", package]):
         logging.error(f"Failed to install {package}. Exiting script.")
@@ -51,6 +52,24 @@ for package in packages:
 
 logging.info("All packages installed successfully.")
 print("All packages installed successfully.")
+
+
+print(f'Downloading rofi themes')
+try:
+    run_command(["git", "clone", "https://github.com/lr-tech/rofi-themes-collection.git"])
+    run_command(["mkdir", "-p", f"{home_dir}/.local/share/rofi/themes"])
+    run_command(["cp", "-r", "themes/*", f"{home_dir}/.local/share/rofi/themes"])
+    print(f'Rofi themes downloaded successfully.')
+    logging.info(f'Rofi themes downloaded successfully.')
+    print("Search for your desired theme, press enter to preview, then Alt+a to accept the new theme.")
+    print('''
+For terminator themes; check:
+https://github.com/EliverLara/terminator-themes          
+''')
+except subprocess.CalledProcessError as e:
+    logging.error(f"Failed to download rofi themes: {e}")
+    print(f"Failed to download rofi themes: {e}")
+
 
 chrom_installation = r'''
 curl https://dl.google.com/linux/linux_signing_key.pub \
@@ -62,6 +81,7 @@ sudo DEBIAN_FRONTEND=noninteractive \
     apt-get install --assume-yes chrome-remote-desktop
 '''.strip()
 
+
 print(f'''
 To install Google Chrome Remote Desktop, run the following command:
 ========================================
@@ -70,4 +90,3 @@ To install Google Chrome Remote Desktop, run the following command:
 
 ========================================
 ''')
-
